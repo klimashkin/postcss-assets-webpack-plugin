@@ -1,0 +1,33 @@
+{
+  "name": "postcss-assets-webpack-plugin",
+  "description": "Webpack plugin to apply postcss on webpack's emit event",
+  "version": "1.0.0",
+  "license": "MIT",
+  "author": "Pavel Klimashkin",
+  "homepage": "https://github.com/klimashkin/postcss-assets-webpack-plugin",
+  "changelog": "https://github.com/klimashkin/postcss-assets-webpack-plugin/blob/master/CHANGELOG.md",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/klimashkin/postcss-assets-webpack-plugin.git"
+  },
+  "bugs": {
+    "url": "https://github.com/klimashkin/postcss-assets-webpack-plugin/issues",
+    "email": "klimashkin@gmail.com"
+  },
+  "main": "index.js",
+  "dependencies": {
+    "postcss": "^5.1.2",
+    "webpack-sources": "^0.1.2"
+  },
+  "keywords": [
+    "css",
+    "assets",
+    "webpack",
+    "postcss",
+    "postcss-loader",
+    "postcss-assets-webpack-plugin"
+  ],
+  "engines": {
+    "node": ">=0.10"
+  }
+}
