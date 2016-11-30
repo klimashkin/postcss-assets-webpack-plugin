@@ -21,7 +21,7 @@ import csswring from 'csswring';
 import mqpacker from 'mqpacker';
 import autoprefixer from 'autoprefixer';
 import ExtractTextPlugin from 'extract-text-webpack-plugin';
-import PostcssAssetsPlugin from 'postcss-assets-webpack-plugin';
+import PostCSSAssetsPlugin from 'postcss-assets-webpack-plugin';
  
 const lessLoader = 'css?modules&importLoaders=1&localIdentName=[hash:10]!postcss!less';
  
