@@ -34,11 +34,30 @@ PostCSSAssetsPlugin.prototype.apply = function(compiler) {
             var asset = assets[name];
             var originalCss = asset.source();
 
+            var mapName = originalCss.match(/\/\*# sourceMappingURL=(.{1,200}).*\*\/$|$/)[1];
+
+            var inlineMap = mapName ? mapName.search(/^data:/) === 0 : false;
+            if (inlineMap) { self.log('Found inline source map'); }
+
+            var mapAsset = mapName && !inlineMap ? assets[mapName] : null;
+            var externalMap = mapAsset ? mapAsset.source() : undefined;
+            if (externalMap) { self.log('Found external source map'); }
+
+            var processOptions = {
+                from: name,
+                to: name,
+                map: (inlineMap || externalMap) ? {
+                    inline: inlineMap,
+                    sourcesContent: true,
+                    prev: externalMap
+                } : false
+            };
+
             self.log('Processing ' + name + '...');
 
             result.push(
                 postcss(options.plugins)
-                    .process(originalCss)
+                    .process(originalCss, processOptions)
                     .then(function handlePostCSSResult(result) {
                         var processedCss = result.css;
                         var warnings = result.warnings();
@@ -48,6 +67,9 @@ PostCSSAssetsPlugin.prototype.apply = function(compiler) {
                         }
 
                         assets[name] = new webpackSources.RawSource(processedCss);
+                        if (mapAsset) {
+                            assets[mapName] = new webpackSources.RawSource(JSON.stringify(result.map));
+                        }
 
                         self.log('Processed ' + name + '. Length before: ' + originalCss.length + ', length after: ' + processedCss.length);
                     })
