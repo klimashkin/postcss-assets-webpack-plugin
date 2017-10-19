@@ -16,6 +16,7 @@
   },
   "main": "index.js",
   "dependencies": {
+    "human-size": "^1.1.0",
     "postcss": "^5.1.2",
     "webpack-sources": "^0.1.2"
   },
