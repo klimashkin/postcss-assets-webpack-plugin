@@ -1,96 +1,92 @@
-var postcss = require('postcss');
-var webpackSources = require('webpack-sources');
-var humanSize = require('human-size');
+const postcss = require('postcss');
+const fancyLog = require('fancy-log');
+const humanSize = require('human-size');
+const webpackSources = require('webpack-sources');
 
-function PostCSSAssetsPlugin(options) {
-    this.options = options || {};
+const pluginName = 'PostCSSAssetsPlugin';
 
-    if (options.test === undefined) {
-        this.options.test = /\.css$/;
-    }
+module.exports = class PostCSSAssetsPlugin {
+  constructor({test = /\.css$/, plugins = [], log = true} = {}) {
+    this.test = test;
+    this.plugins = plugins;
 
-    if (options.plugins === undefined) {
-        this.options.plugins = [];
-    }
+    this.log = log ? fancyLog : () => {};
+  }
 
-    if (options.log === undefined) {
-        this.options.log = true;
-    }
-}
+  apply(compiler) {
+    compiler.hooks.emit.tapPromise(pluginName, compilation => {
+      const assets = compilation.assets;
 
-PostCSSAssetsPlugin.prototype.apply = function(compiler) {
-    var self = this;
-    var options = this.options;
+      this.log('PostCSSAssetsPlugin: Starting...');
 
-    compiler.plugin('emit', function(compilation, compileCallback) {
-        var assets = compilation.assets;
+      return Promise.all(Object.keys(assets).reduce((result, name) => {
+        if (!this.test.test(name)) {
+          return result;
+        }
 
-        self.log('Start PostCSSAssetsPlugin');
+        const asset = assets[name];
+        const originalCss = asset.source();
 
-        return Promise.all(Object.keys(assets).reduce(function (result, name) {
-            if (!options.test.test(name)) {
-                return result;
-            }
+        const mapName = originalCss.match(/\/\*# sourceMappingURL=(.{1,200}).*\*\/$|$/)[1];
 
-            var asset = assets[name];
-            var originalCss = asset.source();
+        const inlineMap = mapName ? mapName.search(/^data:/) === 0 : false;
+        if (inlineMap) {
+          this.log('PostCSSAssetsPlugin: Found inline source map');
+        }
 
-            var mapName = originalCss.match(/\/\*# sourceMappingURL=(.{1,200}).*\*\/$|$/)[1];
+        const mapAsset = mapName && !inlineMap ? assets[mapName] : null;
+        const externalMap = mapAsset ? mapAsset.source() : undefined;
+        if (externalMap) {
+          this.log('PostCSSAssetsPlugin: Found external source map');
+        }
 
-            var inlineMap = mapName ? mapName.search(/^data:/) === 0 : false;
-            if (inlineMap) { self.log('Found inline source map'); }
+        const processOptions = {
+          from: name,
+          to: name,
+          map: (inlineMap || externalMap) ? {
+            inline: inlineMap,
+            sourcesContent: true,
+            prev: externalMap
+          } : false
+        };
 
-            var mapAsset = mapName && !inlineMap ? assets[mapName] : null;
-            var externalMap = mapAsset ? mapAsset.source() : undefined;
-            if (externalMap) { self.log('Found external source map'); }
+        this.log(`PostCSSAssetsPlugin: Processing ${name}...`);
 
-            var processOptions = {
-                from: name,
-                to: name,
-                map: (inlineMap || externalMap) ? {
-                    inline: inlineMap,
-                    sourcesContent: true,
-                    prev: externalMap
-                } : false
-            };
+        result.push(
+          postcss(this.plugins)
+            .process(originalCss, processOptions)
+            .then(result => {
+              const processedCss = result.css;
+              const warnings = result.warnings();
 
-            self.log('Processing ' + name + '...');
+              if (warnings && warnings.length) {
+                this.log('PostCSSAssetsPlugin:', warnings.join('\n'));
+              }
 
-            result.push(
-                postcss(options.plugins)
-                    .process(originalCss, processOptions)
-                    .then(function handlePostCSSResult(result) {
-                        var processedCss = result.css;
-                        var warnings = result.warnings();
+              assets[name] = new webpackSources.RawSource(processedCss);
 
-                        if (warnings && warnings.length) {
-                            self.log(warnings.join('\n'));
-                        }
+              if (mapAsset) {
+                assets[mapName] = new webpackSources.RawSource(JSON.stringify(result.map));
+              }
 
-                        assets[name] = new webpackSources.RawSource(processedCss);
-                        if (mapAsset) {
-                            assets[mapName] = new webpackSources.RawSource(JSON.stringify(result.map));
-                        }
+              this.log(
+                'PostCSSAssetsPlugin:',
+                `Processed ${name}. Size before: ${humanSize(originalCss.length, 3)},`,
+                `size after: ${humanSize(processedCss.length, 2)}`
+              );
+            })
+            .catch(error => {
+              this.log('PostCSSAssetsPlugin:', `Error processing file: ${name}`, error);
 
-                        self.log('Processed ' + name + '. Length before: ' + humanSize(originalCss.length, 2) + ', length after: ' + humanSize(processedCss.length, 2));
-                    })
-                    .catch(function (error) {
-                        self.log('Error processing file: ' + name, error);
-                    })
-            );
+              throw error;
+            })
+        );
 
-            return result;
-        }, [])).then(function () {
-            self.log('Finish PostCSSAssetsPlugin');
-            compileCallback();
-        }).catch(compileCallback);
+        return result;
+      }, []))
+      .then(() => {
+        this.log('PostCSSAssetsPlugin: Done.');
+      });
     });
+  }
 };
-
-PostCSSAssetsPlugin.prototype.log = function () {
-    if (this.options.log) {
-        console.log.apply(console, arguments);
-    }
-};
-
-module.exports = PostCSSAssetsPlugin;
