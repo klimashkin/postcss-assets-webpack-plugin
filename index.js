@@ -1,5 +1,6 @@
 var postcss = require('postcss');
 var webpackSources = require('webpack-sources');
+var humanSize = require('human-size');
 
 function PostCSSAssetsPlugin(options) {
     this.options = options || {};
@@ -71,7 +72,7 @@ PostCSSAssetsPlugin.prototype.apply = function(compiler) {
                             assets[mapName] = new webpackSources.RawSource(JSON.stringify(result.map));
                         }
 
-                        self.log('Processed ' + name + '. Length before: ' + originalCss.length + ', length after: ' + processedCss.length);
+                        self.log('Processed ' + name + '. Length before: ' + humanSize(originalCss.length, 2) + ', length after: ' + humanSize(processedCss.length, 2));
                     })
                     .catch(function (error) {
                         self.log('Error processing file: ' + name, error);
