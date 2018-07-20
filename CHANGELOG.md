@@ -1,5 +1,8 @@
 # Changelog
 
+## 3.0.0  (2018-07-20)
+ * Use PostCSS 7.0
+ 
 ## 2.0.0  (2018-06-04)
  * Require Webpack 4. Use tapable api
  * Require NodeJS 6+. Move to ES6 syntax
