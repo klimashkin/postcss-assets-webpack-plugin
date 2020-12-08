@@ -13,80 +13,82 @@ module.exports = class PostCSSAssetsPlugin {
     this.log = log ? fancyLog : () => {};
   }
 
-  apply(compiler) {
-    compiler.hooks.emit.tapPromise(pluginName, (compilation) => {
-      const { assets } = compilation;
+  run(compilation) {
+    const { assets } = compilation;
 
-      this.log('PostCSSAssetsPlugin: Starting...');
+    this.log('PostCSSAssetsPlugin: Starting...');
 
-      return Promise.all(Object.keys(assets).reduce((result, name) => {
-        if (!this.test.test(name)) {
-          return result;
-        }
-
-        const asset = assets[name];
-        const originalCss = asset.source();
-
-        const mapName = originalCss.match(/\/\*# sourceMappingURL=(.{1,200}).*\*\/$|$/)[1];
-
-        const inlineMap = mapName ? mapName.search(/^data:/) === 0 : false;
-        if (inlineMap) {
-          this.log('PostCSSAssetsPlugin: Found inline source map');
-        }
-
-        const mapAsset = mapName && !inlineMap ? assets[mapName] : null;
-        const externalMap = mapAsset ? mapAsset.source() : undefined;
-        if (externalMap) {
-          this.log('PostCSSAssetsPlugin: Found external source map');
-        }
-
-        const processOptions = {
-          from: name,
-          to: name,
-          map: (inlineMap || externalMap) ? {
-            inline: inlineMap,
-            sourcesContent: true,
-            prev: externalMap,
-          } : false,
-        };
-
-        this.log(`PostCSSAssetsPlugin: Processing ${name}...`);
-
-        result.push(
-          postcss(this.plugins)
-            .process(originalCss, processOptions)
-            .then((postcssResult) => {
-              const processedCss = postcssResult.css;
-              const warnings = postcssResult.warnings();
-
-              if (warnings && warnings.length) {
-                this.log('PostCSSAssetsPlugin:', warnings.join('\n'));
-              }
-
-              assets[name] = new webpackSources.RawSource(processedCss);
-
-              if (mapAsset) {
-                assets[mapName] = new webpackSources.RawSource(JSON.stringify(postcssResult.map));
-              }
-
-              this.log(
-                'PostCSSAssetsPlugin:',
-                `Processed ${name}. Size before: ${humanSize(originalCss.length, 3)},`,
-                `size after: ${humanSize(processedCss.length, 2)}`,
-              );
-            })
-            .catch((error) => {
-              this.log('PostCSSAssetsPlugin:', `Error processing file: ${name}`, error);
-
-              throw error;
-            }),
-        );
-
+    return Promise.all(Object.keys(assets).reduce((result, name) => {
+      if (!this.test.test(name)) {
         return result;
-      }, []))
-        .then(() => {
-          this.log('PostCSSAssetsPlugin: Done.');
-        });
-    });
+      }
+
+      const asset = assets[name];
+      const originalCss = asset.source();
+
+      const mapName = originalCss.match(/\/\*# sourceMappingURL=(.{1,200}).*\*\/$|$/)[1];
+
+      const inlineMap = mapName ? mapName.search(/^data:/) === 0 : false;
+      if (inlineMap) {
+        this.log('PostCSSAssetsPlugin: Found inline source map');
+      }
+
+      const mapAsset = mapName && !inlineMap ? assets[mapName] : null;
+      const externalMap = mapAsset ? mapAsset.source() : undefined;
+      if (externalMap) {
+        this.log('PostCSSAssetsPlugin: Found external source map');
+      }
+
+      const processOptions = {
+        from: name,
+        to: name,
+        map: (inlineMap || externalMap) ? {
+          inline: inlineMap,
+          sourcesContent: true,
+          prev: externalMap,
+        } : false,
+      };
+
+      this.log(`PostCSSAssetsPlugin: Processing ${name}...`);
+
+      result.push(
+        postcss(this.plugins)
+          .process(originalCss, processOptions)
+          .then((postcssResult) => {
+            const processedCss = postcssResult.css;
+            const warnings = postcssResult.warnings();
+
+            if (warnings && warnings.length) {
+              this.log('PostCSSAssetsPlugin:', warnings.join('\n'));
+            }
+
+            assets[name] = new webpackSources.RawSource(processedCss);
+
+            if (mapAsset) {
+              assets[mapName] = new webpackSources.RawSource(JSON.stringify(postcssResult.map));
+            }
+
+            this.log(
+              'PostCSSAssetsPlugin:',
+              `Processed ${name}. Size before: ${humanSize(originalCss.length, 3)},`,
+              `size after: ${humanSize(processedCss.length, 2)}`,
+            );
+          })
+          .catch((error) => {
+            this.log('PostCSSAssetsPlugin:', `Error processing file: ${name}`, error);
+
+            throw error;
+          }),
+      );
+
+      return result;
+    }, []))
+      .then(() => {
+        this.log('PostCSSAssetsPlugin: Done.');
+      });
+  }
+
+  apply(compiler) {
+    compiler.hooks.emit.tapPromise(pluginName, (compilation) => this.run(compilation));
   }
 };
