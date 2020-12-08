@@ -89,6 +89,15 @@ module.exports = class PostCSSAssetsPlugin {
   }
 
   apply(compiler) {
-    compiler.hooks.emit.tapPromise(pluginName, (compilation) => this.run(compilation));
+    const stage = compiler.createCompilation().constructor.PROCESS_ASSETS_STAGE_OPTIMIZE;
+
+    if (stage) {
+      compiler.hooks.compilation.tap(pluginName, (compilation) => {
+        const stageSettings = { name: pluginName, stage };
+        compilation.hooks.processAssets.tapPromise(stageSettings, () => this.run(compilation));
+      });
+    } else {
+      compiler.hooks.emit.tapPromise(pluginName, (compilation) => this.run(compilation));
+    }
   }
 };
