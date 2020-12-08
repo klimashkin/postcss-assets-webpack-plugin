@@ -6,7 +6,7 @@ const webpackSources = require('webpack-sources');
 const pluginName = 'PostCSSAssetsPlugin';
 
 module.exports = class PostCSSAssetsPlugin {
-  constructor({test = /\.css$/, plugins = [], log = true} = {}) {
+  constructor({ test = /\.css$/, plugins = [], log = true } = {}) {
     this.test = test;
     this.plugins = plugins;
 
@@ -14,8 +14,8 @@ module.exports = class PostCSSAssetsPlugin {
   }
 
   apply(compiler) {
-    compiler.hooks.emit.tapPromise(pluginName, compilation => {
-      const assets = compilation.assets;
+    compiler.hooks.emit.tapPromise(pluginName, (compilation) => {
+      const { assets } = compilation;
 
       this.log('PostCSSAssetsPlugin: Starting...');
 
@@ -46,8 +46,8 @@ module.exports = class PostCSSAssetsPlugin {
           map: (inlineMap || externalMap) ? {
             inline: inlineMap,
             sourcesContent: true,
-            prev: externalMap
-          } : false
+            prev: externalMap,
+          } : false,
         };
 
         this.log(`PostCSSAssetsPlugin: Processing ${name}...`);
@@ -55,9 +55,9 @@ module.exports = class PostCSSAssetsPlugin {
         result.push(
           postcss(this.plugins)
             .process(originalCss, processOptions)
-            .then(result => {
-              const processedCss = result.css;
-              const warnings = result.warnings();
+            .then((postcssResult) => {
+              const processedCss = postcssResult.css;
+              const warnings = postcssResult.warnings();
 
               if (warnings && warnings.length) {
                 this.log('PostCSSAssetsPlugin:', warnings.join('\n'));
@@ -66,27 +66,27 @@ module.exports = class PostCSSAssetsPlugin {
               assets[name] = new webpackSources.RawSource(processedCss);
 
               if (mapAsset) {
-                assets[mapName] = new webpackSources.RawSource(JSON.stringify(result.map));
+                assets[mapName] = new webpackSources.RawSource(JSON.stringify(postcssResult.map));
               }
 
               this.log(
                 'PostCSSAssetsPlugin:',
                 `Processed ${name}. Size before: ${humanSize(originalCss.length, 3)},`,
-                `size after: ${humanSize(processedCss.length, 2)}`
+                `size after: ${humanSize(processedCss.length, 2)}`,
               );
             })
-            .catch(error => {
+            .catch((error) => {
               this.log('PostCSSAssetsPlugin:', `Error processing file: ${name}`, error);
 
               throw error;
-            })
+            }),
         );
 
         return result;
       }, []))
-      .then(() => {
-        this.log('PostCSSAssetsPlugin: Done.');
-      });
+        .then(() => {
+          this.log('PostCSSAssetsPlugin: Done.');
+        });
     });
   }
 };
