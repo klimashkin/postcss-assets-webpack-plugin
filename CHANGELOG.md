@@ -1,6 +1,10 @@
 # Changelog
 
-## 4.0.0  (2018-07-20)
+## 4.1.0  (2020-12-09)
+ * Support Webpack 5 (by [Sigalin Kirill](https://github.com/SumoTTo))
+ * Add ESLint (by [Sigalin Kirill](https://github.com/SumoTTo))
+
+## 4.0.0  (2020-09-25)
  * Use PostCSS 8
  * Require NodeJS 10+.
 
