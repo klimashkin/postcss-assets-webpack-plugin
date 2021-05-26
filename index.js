@@ -93,8 +93,10 @@ module.exports = class PostCSSAssetsPlugin {
 
     if (stage) {
       compiler.hooks.compilation.tap(pluginName, (compilation) => {
-        const stageSettings = { name: pluginName, stage };
-        compilation.hooks.processAssets.tapPromise(stageSettings, () => this.run(compilation));
+        if (Object.keys(compilation.assets).length) {
+          const stageSettings = { name: pluginName, stage };
+          compilation.hooks.processAssets.tapPromise(stageSettings, () => this.run(compilation));
+        }
       });
     } else {
       compiler.hooks.emit.tapPromise(pluginName, (compilation) => this.run(compilation));
