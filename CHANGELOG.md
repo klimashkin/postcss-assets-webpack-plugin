@@ -1,5 +1,8 @@
 # Changelog
 
+## 4.1.1  (2021-05-25)
+ * Skip empty assets  (by [chibibirdie](https://github.com/chibibirdie))
+
 ## 4.1.0  (2020-12-09)
  * Support Webpack 5 (by [Sigalin Kirill](https://github.com/SumoTTo))
  * Add ESLint (by [Sigalin Kirill](https://github.com/SumoTTo))
