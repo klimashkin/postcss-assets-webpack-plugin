@@ -14,7 +14,7 @@ module.exports = class PostCSSAssetsPlugin {
   }
 
   run(assets) {
-    if (!(Object.keys(assets).length > 0)) {
+    if (Object.keys(assets).length === 0) {
       return Promise.resolve();
     }
 
