@@ -13,8 +13,10 @@ module.exports = class PostCSSAssetsPlugin {
     this.log = log ? fancyLog : () => {};
   }
 
-  run(compilation) {
-    const { assets } = compilation;
+  run(assets) {
+    if (Object.keys(assets).length === 0) {
+      return Promise.resolve();
+    }
 
     this.log('PostCSSAssetsPlugin: Starting...');
 
@@ -93,13 +95,13 @@ module.exports = class PostCSSAssetsPlugin {
 
     if (stage) {
       compiler.hooks.compilation.tap(pluginName, (compilation) => {
-        if (Object.keys(compilation.assets).length) {
-          const stageSettings = { name: pluginName, stage };
-          compilation.hooks.processAssets.tapPromise(stageSettings, () => this.run(compilation));
-        }
+        const stageSettings = { name: pluginName, stage };
+        compilation.hooks.processAssets.tapPromise(stageSettings, (assets) => {
+          return this.run(assets || compilation.assets);
+        });
       });
     } else {
-      compiler.hooks.emit.tapPromise(pluginName, (compilation) => this.run(compilation));
+      compiler.hooks.emit.tapPromise(pluginName, ({assets}) => this.run(assets));
     }
   }
 };
