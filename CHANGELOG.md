@@ -1,5 +1,8 @@
 # Changelog
 
+## 4.1.2  (2021-07-14)
+ * Move assets check later to actual hook process #6 (by [chibibirdie](https://github.com/chibibirdie))
+
 ## 4.1.1  (2021-05-25)
  * Skip empty assets  (by [chibibirdie](https://github.com/chibibirdie))
 
